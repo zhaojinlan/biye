@@ -1,0 +1,431 @@
+基于多智能体与知识图谱的智能医疗辅助诊断系统
+
+技术架构详细说明
+
+
+一、系统总体架构
+
+本系统采用前后端分离的微服务架构，分为三层：
+
+1. 客户端层（medical_client）
+   - 多智能体协作引擎
+   - 对话管理
+   - 患者数据管理
+   - MCP客户端
+
+2. 服务端层（medical_server）
+   - REST API服务
+   - MCP工具服务
+   - 知识图谱管理
+   - 文献处理服务
+
+3. 数据层
+   - Neo4j图数据库（知识图谱）
+   - Redis数据库（向量索引、缓存）
+   - 文件系统（文档、日志）
+
+
+二、客户端架构（medical_client）
+
+核心组件：
+
+1. 多智能体工作流引擎（Agent/flow.py）
+   - 基于LangGraph的状态图管理
+   - 5个专业化智能体节点
+   - 智能路由机制
+   - 多轮对话上下文管理
+
+2. 监督节点（Supervisor Node）
+   - 功能：任务分类与路由
+   - 输入：用户消息
+   - 输出：路由决策（triage_node/recommend_node/agen_node/other_node）
+   - 实现：使用LLM进行意图识别
+
+3. 分诊节点（Triage Node）
+   - 功能：并行分诊评估
+   - 设计：两个并行智能体
+     * 智能体1：医学顾问（使用MCP工具）
+     * 智能体2：急诊分诊（基于五级分诊标准）
+   - 输出：综合分诊报告
+
+4. 风险评估节点（Recommend Node）
+   - 功能：疾病风险分析
+   - 核心算法：
+     * 症状-疾病匹配
+     * 风险因子评估
+     * Softmax概率计算
+   - 输出：疾病概率分布、检查建议
+
+5. 多专家会诊节点（Experts Node）
+   - 功能：多视角诊断分析
+   - 专家角色：
+     * 诊断专家
+     * 治疗专家
+     * 影像专家
+   - 实现：基于RAG的知识检索
+   - 输出：综合会诊报告
+
+6. 知识查询节点（Query Node）
+   - 功能：医学知识问答
+   - 实现：ReAct智能体
+   - 工具：MCP工具集
+   - 输出：知识查询结果
+
+技术栈：
+- Python 3.8+
+- LangChain 0.3.27
+- LangGraph 0.6.8
+- FastAPI 0.117.1
+- langchain-mcp-adapters 0.1.10
+
+
+三、服务端架构（medical_server）
+
+核心组件：
+
+1. REST API服务（mcp_server_service.py）
+   - 功能：
+     * PDF文献上传
+     * 知识图谱管理
+     * 文档列表查询
+     * 实体关系查询
+   - 端口：8000
+   - 框架：FastAPI
+
+2. MCP工具服务（MCP/mcp_server.py）
+   - 功能：提供标准化医学知识查询工具
+   - 工具列表：
+     * symptom_search_analyze：症状检索与分析
+     * query_disease_info：疾病信息查询
+     * get_diagnostic_tests：诊断检查方法查询
+     * query_treatment_methods：治疗方法查询
+     * rag_search：文档向量检索
+   - 端口：8002
+   - 协议：MCP over SSE
+
+3. 知识图谱构建服务（Construct/knowledge_workflow.py）
+   - 功能：自动化处理医学文献
+   - 流程：
+     1. PDF解析（Docling）
+     2. 文本清洗
+     3. 文本分块
+     4. 实体抽取（LLM）
+     5. 关系抽取（LLM）
+     6. 图谱存储（Neo4j）
+     7. 向量索引（Redis）
+   - 输出：知识图谱、处理日志
+
+4. 知识图谱查询服务（RAG/tools/KGQuery.py）
+   - 功能：封装Neo4j查询
+   - 查询类型：
+     * 症状→疾病
+     * 疾病→风险因子
+     * 疾病→治疗方法
+     * 疾病→诊断检查
+   - 实现：Cypher查询语言
+
+5. 向量检索服务（RAG/tools/rag.py）
+   - 功能：文档向量检索
+   - 向量模型：M3E-Base
+   - 向量数据库：Redis
+   - 检索策略：余弦相似度
+
+技术栈：
+- Python 3.8+
+- FastAPI 0.117.1
+- FastMCP 0.1.0
+- Neo4j 5.14.0+
+- Redis 5.0.0+
+- Docling 2.0.0
+- Sentence-Transformers 2.2.0+
+- PyTorch 2.0.0+
+
+
+四、数据层架构
+
+1. Neo4j知识图谱
+
+节点类型：
+- Disease（疾病）
+  * 属性：name, description
+- Symptom（症状）
+  * 属性：name, description
+  * 向量索引：enhanced_symptom_vectors
+- RiskFactor（风险因子）
+  * 属性：name, description
+- Pathogen（病原体）
+  * 属性：name, type
+- Treatment（治疗方法）
+  * 属性：name, description, type
+- DiagnosticTest（诊断检查）
+  * 属性：name, description, type
+
+关系类型：
+- HAS_SYMPTOM：疾病→症状
+- HAS_RISK_FACTOR：疾病→风险因子
+- HAS_PATHOGEN：疾病→病原体
+- HAS_TREATMENT：疾病→治疗方法
+- REQUIRES_TEST：疾病→诊断检查
+
+索引：
+- 症状向量索引：enhanced_symptom_vectors
+  * 向量维度：768
+  * 距离度量：余弦相似度
+
+2. Redis数据库
+
+数据结构：
+- 向量索引：medical_docs
+  * 键格式：vec:medical_docs:{chunk_id}
+  * 字段：vector, content, metadata, chunk_id
+- 缓存数据：
+  * 查询结果缓存
+  * 会话状态缓存
+
+索引配置：
+- 向量类型：FLOAT32
+- 向量维度：768
+- 距离度量：COSINE
+- 索引算法：FLAT
+
+3. 文件系统
+
+目录结构：
+- Knowledges/：知识库根目录
+  * {文献名称}/：每个文献的处理目录
+    - {文献名称}.pdf：原始PDF
+    - {文献名称}.html：Docling解析结果
+    - {文献名称}_cleaned.html：清洗后的HTML
+    - {文献名称}.md：Markdown格式
+    - {文献名称}_entities.json：实体抽取结果
+  * _metadata.json：知识库元数据
+- patient_data/：患者数据目录
+  * {patient_id}.json：患者记录
+- temp_uploads/：临时上传目录
+
+
+五、通信协议
+
+1. MCP协议（Model Context Protocol）
+
+传输方式：Server-Sent Events（SSE）
+- URL：http://server:8002/sse
+- 连接：长连接
+- 数据格式：JSON
+
+消息类型：
+- 工具列表请求：list_tools
+- 工具调用请求：call_tool
+- 工具调用响应：tool_result
+
+工具调用流程：
+1. 客户端连接MCP服务端（SSE）
+2. 客户端请求工具列表
+3. 服务端返回可用工具定义
+4. 客户端调用工具
+5. 服务端执行工具逻辑
+6. 服务端返回结果
+
+优势：
+- 标准化接口
+- 工具动态发现
+- 支持流式响应
+- 轻量级客户端
+
+2. REST API
+
+接口列表：
+
+患者管理：
+- GET /api/patients：获取患者列表
+- POST /api/patients：创建患者
+- GET /api/patients/{id}：获取患者详情
+- PUT /api/patients/{id}：更新患者
+- DELETE /api/patients/{id}：删除患者
+
+知识图谱管理：
+- POST /api/upload：上传PDF文献
+- GET /api/documents：获取文档列表
+- GET /api/documents/{id}：获取文档详情
+- DELETE /api/documents/{id}：删除文档
+- GET /api/processing-status/{task_id}：查询处理状态
+
+知识查询：
+- POST /api/query/disease：查询疾病信息
+- POST /api/query/symptoms：查询症状相关疾病
+- POST /api/query/risk-factors：查询风险因子
+- POST /api/query/treatments：查询治疗方法
+
+对话接口：
+- POST /api/chat：发送消息
+- WebSocket /ws/chat：实时对话
+
+数据格式：JSON
+认证方式：可选（Bearer Token）
+
+
+六、部署架构
+
+1. 开发环境部署
+
+客户端：
+- 运行方式：python agent_service.py
+- 端口：8012
+- 依赖：requirements-mcp-client.txt
+
+服务端：
+- REST API：python mcp_server_service.py（端口8000）
+- MCP服务：python MCP/mcp_server.py（端口8002）
+- 依赖：requirements-mcp-server.txt
+
+数据库：
+- Neo4j：bolt://localhost:7687
+- Redis：localhost:6379
+
+2. 生产环境部署
+
+容器化部署（Docker）：
+- 客户端容器：medical-client
+- 服务端容器：medical-server
+- Neo4j容器：neo4j
+- Redis容器：redis
+
+网络配置：
+- 内部网络：服务间通信
+- 外部网络：对外提供服务
+
+负载均衡：
+- Nginx反向代理
+- 多实例部署
+- 健康检查
+
+数据持久化：
+- Neo4j数据卷
+- Redis数据卷
+- 文件系统挂载
+
+3. 混合部署方案
+
+场景：客户端本地部署，服务端云端部署
+
+客户端：
+- 打包为可执行文件（PyInstaller）
+- 配置云端服务地址
+- 轻量级，无需GPU
+
+服务端：
+- 云服务器部署
+- GPU加速（向量化、LLM推理）
+- 统一管理知识库
+
+优势：
+- 降低客户端硬件要求
+- 集中管理知识库
+- 易于更新和维护
+
+
+七、性能优化
+
+1. LLM调用优化
+- 温度参数调优（分诊节点temperature=0.1）
+- 最大输出长度限制（max_tokens=12000）
+- 请求间隔控制（避免频繁调用）
+- 批量处理（文献处理时）
+
+2. 数据库优化
+- Neo4j索引优化（症状向量索引）
+- Redis缓存策略（查询结果缓存）
+- 连接池管理（复用数据库连接）
+- 查询优化（Cypher查询优化）
+
+3. 向量检索优化
+- ONNX Runtime加速（模型推理）
+- 批量向量化（减少模型调用次数）
+- Top-K限制（控制返回结果数量）
+- 向量索引优化（Redis FLAT索引）
+
+4. 并发处理
+- 异步IO（FastAPI异步接口）
+- 并行处理（分诊节点并行、多专家并行）
+- 线程池（文献处理）
+- 连接池（数据库连接）
+
+5. 资源管理
+- 内存管理（及时释放大对象）
+- GPU内存管理（模型加载优化）
+- 文件清理（临时文件定期清理）
+- 日志轮转（避免日志文件过大）
+
+
+八、安全性设计
+
+1. 数据安全
+- 患者数据加密存储
+- 敏感信息脱敏
+- 数据访问控制
+- 定期备份
+
+2. 网络安全
+- HTTPS加密传输
+- API认证授权
+- 防止SQL注入（参数化查询）
+- 防止XSS攻击（输入验证）
+
+3. 系统安全
+- 环境变量管理（敏感配置）
+- 最小权限原则
+- 安全日志记录
+- 定期安全审计
+
+
+九、可扩展性设计
+
+1. 功能扩展
+- 新增智能体节点（模块化设计）
+- 新增MCP工具（标准化接口）
+- 新增疾病领域（知识图谱扩展）
+- 新增查询类型（灵活的查询接口）
+
+2. 性能扩展
+- 水平扩展（多实例部署）
+- 垂直扩展（增加服务器资源）
+- 数据库分片（大规模数据）
+- 缓存扩展（Redis集群）
+
+3. 集成扩展
+- 第三方系统集成（标准API）
+- 电子病历系统对接
+- 医学影像系统对接
+- 实验室信息系统对接
+
+
+十、监控与运维
+
+1. 系统监控
+- 服务健康检查
+- 性能指标监控（响应时间、吞吐量）
+- 资源使用监控（CPU、内存、磁盘）
+- 错误日志监控
+
+2. 业务监控
+- 用户访问统计
+- 功能使用统计
+- 诊断准确率统计
+- 知识图谱规模统计
+
+3. 告警机制
+- 服务异常告警
+- 性能下降告警
+- 资源不足告警
+- 错误率告警
+
+4. 日志管理
+- 分级日志（DEBUG、INFO、WARNING、ERROR）
+- 结构化日志（JSON格式）
+- 日志聚合（集中管理）
+- 日志分析（问题排查）
+
+
+总结
+
+本系统采用先进的微服务架构和AI技术，实现了高性能、高可用、易扩展的智能医疗辅助诊断平台。通过合理的架构设计、性能优化和安全措施，系统能够满足实际医疗场景的需求，为医生提供可靠的诊疗辅助服务。

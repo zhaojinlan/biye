@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "毕业论文/第三章_系统需求分析与总体设计/第三章正文.md",
+                "file": "简历_赵锦澜_全栈 AI 应用方向.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "第三章正文"
+              "title": "简历_赵锦澜_全栈 AI 应用方向"
             }
           }
         ]
@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "67343edce608c186",
@@ -186,8 +185,21 @@
   },
   "active": "6e2795ded35512eb",
   "lastOpenFiles": [
-    "毕业论文/第三章_系统需求分析与总体设计/图表.md",
+    "medical_client/Agent/deep_research_node.py.tmp.35936.1773640196507",
+    "medical_client/Agent/deep_research_node.py.tmp.35936.1773640165479",
+    "medical_client/Agent/deep_research_node.py.tmp.35936.1773640117779",
+    "medical_client/Agent/deep_research_node.py.tmp.35936.1773640082163",
+    "medical_client/Agent/recommend_node.py.tmp.35936.1773639965449",
+    "medical_client/Agent/triage_node.py.tmp.35936.1773639771779",
+    "medical_client/Agent/confidence_tracker.py.tmp.35936.1773639572932",
+    "medical_client/Agent/confidence_tracker.py.tmp.35936.1773639557967",
+    "medical_client/Agent/confidence_tracker.py.tmp.35936.1773639534495",
+    "medical_client/Agent/flow.py.tmp.9732.1773636028839",
+    "medical_client/Agent/deep_research_node.py",
+    "简历_赵锦澜_综合版_多面手.md",
+    "简历_赵锦澜_后端 AI 服务方向.md",
     "毕业论文/第三章_系统需求分析与总体设计/第三章正文.md",
+    "毕业论文/第三章_系统需求分析与总体设计/图表.md",
     "毕业论文/实体抽取展示图.md",
     "毕业论文/第三章_系统需求分析与总体设计/写作思路.md",
     "服务端中间件展示图.md",
@@ -200,7 +212,6 @@
     "毕业论文/知识图谱展示.md",
     "Pasted image 20260227173849.png",
     "Pasted image 20260227173705.png",
-    "赵锦澜_分析/知识详解/01_Transformer与Attention详解.md",
-    "赵锦澜_分析/知识详解/attention_demo.py"
+    "赵锦澜_分析/知识详解/01_Transformer与Attention详解.md"
   ]
 }

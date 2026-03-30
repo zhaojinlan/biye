@@ -1,0 +1,6 @@
+{
+    "claudeCode.allowDangerouslySkipPermissions": true,
+    "claudeCode.initialPermissionMode": "plan",
+    "claudeCode.selectedModel": "glm-5",
+    "claudeCode.useCtrlEnterToSend": true
+}
